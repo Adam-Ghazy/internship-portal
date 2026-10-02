@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.notification_deliveries', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('outbox_id')->constrained('recruitment.outbox_events')->restrictOnDelete();
             $table->foreignId('recipient_user_id')->nullable()->constrained('recruitment.users')->restrictOnDelete();
             $table->foreignId('invitation_id')->nullable()->constrained('recruitment.group_invitations')->restrictOnDelete();

@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.group_invitations', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('member_id')->constrained('recruitment.application_group_members')->restrictOnDelete();
             $table->string('token_hash', 64)->unique();
             $table->timestampTz('created_at')->useCurrent();

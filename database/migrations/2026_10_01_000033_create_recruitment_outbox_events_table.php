@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.outbox_events', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('event_key', 200)->unique();
             $table->string('event_type', 80);
             $table->jsonb('payload')->default('{}');

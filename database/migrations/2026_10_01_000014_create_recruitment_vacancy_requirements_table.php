@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.vacancy_requirements', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('vacancy_id')->constrained('recruitment.vacancies')->restrictOnDelete();
             $table->string('label', 160);
             $table->text('description')->default('');

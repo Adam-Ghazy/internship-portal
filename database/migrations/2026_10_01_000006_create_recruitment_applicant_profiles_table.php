@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.applicant_profiles', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('user_id')->unique()->constrained('recruitment.users')->restrictOnDelete();
             $table->string('phone', 32)->nullable();
             $table->timestampTz('created_at')->useCurrent();

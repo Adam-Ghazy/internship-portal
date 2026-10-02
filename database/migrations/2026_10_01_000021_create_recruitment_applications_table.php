@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.applications', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('public_reference', 50)->unique();
             $table->bigInteger('applicant_profile_id');
             $table->bigInteger('applicant_user_id');

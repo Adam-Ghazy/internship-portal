@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.institutions', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('name', 200);
             $table->string('institution_type', 40);
             $table->timestampTz('archived_at')->nullable();

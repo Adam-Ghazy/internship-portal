@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.internship_requests', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('requester_id')->constrained('recruitment.users')->restrictOnDelete();
             $table->foreignId('org_unit_id')->constrained('recruitment.org_units')->restrictOnDelete();
             $table->foreignId('position_id')->constrained('recruitment.internship_positions')->restrictOnDelete();

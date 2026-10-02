@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.audit_events', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('resource_type', 80);
             $table->bigInteger('resource_id');
             $table->foreignId('actor_id')->nullable()->constrained('recruitment.users')->restrictOnDelete();

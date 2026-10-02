@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.application_reviews', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->bigInteger('application_id');
             $table->bigInteger('vacancy_id');
             $table->bigInteger('org_unit_id');

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.internship_programs', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('code', 40)->unique();
             $table->string('name', 160);
             $table->timestampTz('archived_at')->nullable();

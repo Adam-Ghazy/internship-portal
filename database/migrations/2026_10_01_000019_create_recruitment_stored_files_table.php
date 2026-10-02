@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.stored_files', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->string('disk', 40);
             $table->string('object_key', 500);
             $table->foreignId('uploader_id')->constrained('recruitment.users')->restrictOnDelete();

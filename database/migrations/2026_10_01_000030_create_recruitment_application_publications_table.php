@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.application_publications', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->foreignId('application_id')->unique()->constrained('recruitment.applications')->restrictOnDelete();
             $table->bigInteger('final_review_id')->unique();
             $table->string('final_stage', 16)->default('sm');

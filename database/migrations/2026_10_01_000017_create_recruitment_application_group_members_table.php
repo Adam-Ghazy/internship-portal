@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('recruitment.application_group_members', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id')->generatedAs();
             $table->bigInteger('group_id');
             $table->bigInteger('period_id');
             $table->string('invited_email', 254);
