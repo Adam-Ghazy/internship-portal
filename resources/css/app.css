@@ -1,0 +1,48 @@
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-surface text-ink font-sans antialiased;
+    }
+    h1, h2, h3 {
+        text-wrap: balance;
+    }
+    /* State fokus konsisten dengan warna brand. */
+    :focus-visible {
+        @apply outline outline-[3px] outline-offset-[3px] outline-primary;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-card border border-line
+               bg-paper px-[18px] py-3 min-h-[46px] font-semibold text-ink
+               transition-colors hover:border-primary hover:bg-primary-soft
+               disabled:cursor-not-allowed disabled:opacity-55;
+    }
+    .btn-primary {
+        @apply border-primary bg-primary text-white hover:bg-primary-hover hover:border-primary-hover;
+    }
+    .btn-full {
+        @apply w-full;
+    }
+    .tag {
+        @apply inline-flex items-center rounded-md bg-primary-soft px-2.5 py-1 text-[13px] font-medium text-primary-hover;
+    }
+    .tag-neutral {
+        @apply bg-[#f0f0f2] text-[#61616b];
+    }
+    .tag-green {
+        @apply bg-[#edf6f0] text-[#226047];
+    }
+    .card {
+        @apply rounded-card border border-line bg-paper;
+    }
+}
