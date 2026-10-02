@@ -8,6 +8,16 @@
 .env
 .env.backup
 .env.production
+
+# File untuk agents (lokal saja, tidak di-commit)
+/.agents/
+HANDOFF-PASS-*.md
+
+# Docker configuration (local only)
+/.dockerignore
+/Dockerfile
+/docker-compose.yml
+/docker/
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
