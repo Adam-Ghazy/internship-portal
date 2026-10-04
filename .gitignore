@@ -13,11 +13,12 @@
 /.agents/
 HANDOFF-PASS-*.md
 
-# Docker configuration (local only)
+# Docker configuration (lokal saja, copas manual dari VPS)
 /.dockerignore
 /Dockerfile
 /docker-compose.yml
 /docker/
+
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
