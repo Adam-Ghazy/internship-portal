@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -72,6 +73,9 @@ Route::middleware('guest:web')->group(function (): void {
 
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web')->name('logout');
 
-Route::get('/dashboard', function (Request $request): string {
-    return $request->user('web')->isStaff() ? 'Dashboard Staf' : 'Dashboard Pelamar';
+Route::get('/dashboard', function (Request $request): View {
+    $user = $request->user('web');
+    $assignments = $user->activeStaffAssignments()->with('orgUnit')->orderBy('role_code')->get();
+
+    return view('dashboard', compact('user', 'assignments'));
 })->middleware('auth:web')->name('dashboard');

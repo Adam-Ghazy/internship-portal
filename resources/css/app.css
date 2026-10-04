@@ -45,4 +45,8 @@
     .card {
         @apply rounded-card border border-line bg-paper;
     }
+    .form-input {
+        @apply block min-h-[46px] w-full rounded-card border-line bg-paper px-3 py-2.5
+               text-ink focus:border-primary focus:ring-primary;
+    }
 }
