@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,3 +62,16 @@ Route::get('/', function () {
 
     return view('home', compact('vacancies'));
 })->name('home');
+
+Route::middleware('guest:web')->group(function (): void {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register']);
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:web')->name('logout');
+
+Route::get('/dashboard', function (Request $request): string {
+    return $request->user('web')->isStaff() ? 'Dashboard Staf' : 'Dashboard Pelamar';
+})->middleware('auth:web')->name('dashboard');
