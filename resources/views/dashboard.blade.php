@@ -40,8 +40,9 @@
         </section>
         <section aria-labelledby="applications-heading" class="card mt-5 p-6 sm:p-8">
             <x-icon name="clipboard" :size="28" class="mb-4 text-muted" />
-            <h2 id="applications-heading" class="text-lg font-semibold">Lamaran Anda akan tampil di sini</h2>
-            <p class="mt-2 text-sm leading-6 text-muted">Daftar dan status lamaran belum tersedia di halaman ini.</p>
+            <h2 id="applications-heading" class="text-lg font-semibold">Lamaran saya</h2>
+            <p class="mt-2 text-sm leading-6 text-muted">Lanjutkan draf yang belum selesai dan pantau status lamaran yang sudah dikirim.</p>
+            <x-button :href="route('applications.index')" variant="primary" class="mt-6">Lamaran saya</x-button>
         </section>
     @endif
 </div>

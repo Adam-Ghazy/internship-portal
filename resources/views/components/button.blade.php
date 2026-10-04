@@ -1,7 +1,7 @@
 @props(['variant' => 'default', 'href' => null, 'full' => false])
 
 @php
-$classes = 'btn' . ($variant === 'primary' ? ' btn-primary' : '') . ($full ? ' btn-full' : '');
+$classes = 'btn' . match ($variant) { 'primary' => ' btn-primary', 'danger' => ' btn-danger', default => '' } . ($full ? ' btn-full' : '');
 @endphp
 
 @if ($href)

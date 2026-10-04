@@ -30,6 +30,10 @@
     .btn-primary {
         @apply border-primary bg-primary text-white hover:bg-primary-hover hover:border-primary-hover;
     }
+    .btn-danger {
+        @apply border-primary text-primary hover:border-primary hover:bg-primary hover:text-white
+               focus-visible:border-primary focus-visible:bg-primary focus-visible:text-white;
+    }
     .btn-full {
         @apply w-full;
     }

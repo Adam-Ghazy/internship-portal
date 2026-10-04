@@ -41,7 +41,7 @@
 <div id="posisi" class="mx-auto max-w-content px-6 py-12 lg:px-12">
     <div class="mb-8">
         <h2 class="text-[29px] font-semibold">Posisi yang dibuka</h2>
-        <p class="mt-2 text-sm text-muted">Periode Januari 2027 · {{ count($vacancies) }} posisi · pendaftaran dibuka</p>
+        <p class="mt-2 text-sm text-muted">{{ $vacancies->count() }} posisi · lihat periode pendaftaran pada setiap posisi</p>
     </div>
 
     @if (count($vacancies))
@@ -51,26 +51,28 @@
                     <div>
                         <div class="mb-4 flex items-center gap-3">
                             <span class="flex h-11 w-11 items-center justify-center rounded-card bg-primary-soft text-primary">
-                                <x-icon :name="$v['icon']" :size="24" />
+                                <x-icon :name="match ($v->position->code) { 'IT-01' => 'monitor', 'ENG-02' => 'train', 'FIN-03' => 'calendar', default => 'map-pin' }" :size="24" />
                             </span>
                             <div>
-                                <p class="font-semibold leading-tight">{{ $v['unit'] }}</p>
-                                <p class="text-xs text-muted">{{ $v['org'] }} / {{ $v['code'] }}</p>
+                                <p class="font-semibold leading-tight">{{ $v->orgUnit->name }}</p>
+                                <p class="text-xs text-muted">PT INKA (Persero) / {{ $v->position->code }}</p>
                             </div>
                         </div>
                         <h3 class="text-[22px] font-semibold leading-snug">
-                            <a href="#" class="hover:text-primary">{{ $v['title'] }}</a>
+                            <a href="{{ route('vacancies.show', $v->slug) }}" class="hover:text-primary">{{ $v->position->title }}</a>
                         </h3>
                         <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
-                            <span>{{ $v['major'] }}</span>
-                            <span>{{ $v['duration'] }}</span>
-                            <span>{{ $v['level'] }}</span>
+                            @foreach (['Jurusan', 'Durasi', 'Jenjang pendidikan'] as $label)
+                                @if ($requirement = $v->requirements->firstWhere('label', $label))
+                                    <span>{{ $requirement->description }}</span>
+                                @endif
+                            @endforeach
                         </div>
-                        <p class="mt-3 text-sm leading-6 text-ink/90">{{ $v['tasks'] }}</p>
+                        <p class="mt-3 text-sm leading-6 text-ink/90">{{ $v->description }}</p>
                     </div>
                     <div class="flex items-center justify-between gap-3">
-                        <x-tag variant="green">Pendaftaran dibuka</x-tag>
-                        <x-button href="#">Lihat posisi</x-button>
+                        <x-tag :variant="$v->isClosed() ? 'neutral' : 'green'">{{ $v->isClosed() ? 'Ditutup' : 'Pendaftaran dibuka' }}</x-tag>
+                        <x-button :href="route('vacancies.show', $v->slug)">Lihat posisi</x-button>
                     </div>
                 </article>
             @endforeach
