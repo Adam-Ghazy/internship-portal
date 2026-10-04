@@ -35,14 +35,24 @@
         <p class="mt-3 max-w-prose text-sm leading-6 text-muted">Data berikut adalah salinan lamaran saat dikirim. Data pada halaman ini tidak dapat diubah.</p>
         <div class="mt-5 flex flex-wrap items-center gap-3">
             @if ($application->stage === 'submitted')
-                <span class="tag bg-primary text-white">{{ $application->stage }}</span>
+                <span class="tag bg-primary text-white">{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</span>
             @elseif ($application->stage === 'needs_revision')
-                <x-tag>{{ $application->stage }}</x-tag>
+                <x-tag>{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</x-tag>
             @else
-                <x-tag variant="neutral">{{ $application->stage }}</x-tag>
+                <x-tag variant="neutral">{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</x-tag>
             @endif
             <span class="break-all text-sm">Referensi: <strong>{{ $application->public_reference ?? 'Tidak tersedia' }}</strong></span>
         </div>
+
+        @if ($decision)
+            <div class="mt-6 rounded-card border {{ $decision->sm_outcome === 'accepted' ? 'border-green-600' : 'border-primary' }} bg-paper p-5" role="status">
+                <h2 class="text-lg font-semibold">
+                    {{ $decision->sm_outcome === 'accepted' ? 'Hasil seleksi: diterima' : 'Hasil seleksi: tidak diterima' }}
+                </h2>
+                <p class="mt-3 text-sm leading-6">{{ $decision->public_message }}</p>
+                <p class="mt-3 text-xs text-muted">Diumumkan {{ \Illuminate\Support\Carbon::parse($decision->published_at)->locale('id')->translatedFormat('d M Y, H:i') }}</p>
+            </div>
+        @endif
         <dl class="mt-6 grid gap-4 border-y border-line py-5 text-sm sm:grid-cols-2">
             <div>
                 <dt class="text-muted">Tanggal dikirim</dt>

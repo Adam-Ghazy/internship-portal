@@ -69,11 +69,11 @@
                             </th>
                             <td class="px-6 py-5 align-top">
                                 @if ($application->stage === 'submitted')
-                                    <span class="tag bg-primary text-white">{{ $application->stage }}</span>
+                                    <span class="tag bg-primary text-white">{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</span>
                                 @elseif ($application->stage === 'needs_revision')
-                                    <x-tag>{{ $application->stage }}</x-tag>
+                                    <x-tag>{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</x-tag>
                                 @else
-                                    <x-tag variant="neutral">{{ $application->stage }}</x-tag>
+                                    <x-tag variant="neutral">{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</x-tag>
                                 @endif
                                 @if ($application->stage === 'draft')
                                     <p class="mt-2 text-xs text-muted">Belum dikirim</p>

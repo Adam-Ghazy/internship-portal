@@ -85,6 +85,22 @@ class ApplyController extends Controller
         ]);
     }
 
+    /** Label tahap lamaran untuk pelamar. */
+    public static function stageLabel(string $stage): string
+    {
+        return match ($stage) {
+            'draft' => 'Draf',
+            'submitted' => 'Terkirim',
+            'administrative_review' => 'Penyaringan berkas',
+            'needs_revision' => 'Perlu revisi',
+            'manager_review' => 'Sedang ditinjau',
+            'sm_review' => 'Sedang ditinjau',
+            'decided' => 'Sudah diputuskan',
+            'withdrawn' => 'Ditarik',
+            default => $stage,
+        };
+    }
+
     public function show(Request $request, int $application)
     {
         $application = $this->ownedApplication($request, $application);
@@ -100,8 +116,18 @@ class ApplyController extends Controller
             ->join('recruitment.document_types as t', 't.id', '=', 'd.document_type_id')
             ->where('d.submission_id', $submission->id)->select('d.document_type_id', 't.label', 'f.*')->get();
 
+        // Keputusan akhir hanya untuk pelamar: hasil SM + pesan publikasi (internal note tidak dibocorkan).
+        $decision = null;
+        if ($application->stage === 'decided') {
+            $decision = DB::table('recruitment.application_publications as p')
+                ->join('recruitment.application_reviews as r', 'r.id', '=', 'p.final_review_id')
+                ->where('p.application_id', $application->id)
+                ->select('p.public_message', 'p.published_at', 'r.outcome as sm_outcome')
+                ->first();
+        }
+
         return view('applications.show', compact('application', 'submission', 'profileSnapshot',
-            'educationSnapshot', 'vacancySnapshot', 'documents'));
+            'educationSnapshot', 'vacancySnapshot', 'documents', 'decision'));
     }
 
     public function confirmWithdrawal(Request $request, int $application)
