@@ -1,0 +1,1 @@
+<x-tag :variant="in_array($application->stage, ['manager_review', 'sm_review']) ? 'default' : 'neutral'">{{ $stageLabels[$application->stage] ?? match ($application->stage) { 'draft' => 'Draf', 'withdrawn' => 'Ditarik', default => 'Tahap tidak tersedia' } }}</x-tag>

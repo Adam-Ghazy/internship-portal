@@ -107,6 +107,28 @@ POST kedua ditolak, daftar ulang tidak menambah row, draft uji terhapus, GET/POS
 milik user lain 404, serta curl `/lamaran` dengan session 200. Application 3 tetap submitted.
 Tidak ada migration baru, perubahan fungsi DB, atau reset database.
 
+### Model lamaran dan akun staf uji
+
+Model `Application`, `ApplicationSubmission`, `ApplicationReview`, `ApplicationDocument`,
+dan `ApplicationEvent` menggunakan schema `recruitment` dan kolom database aktif.
+`Application::currentSubmission` mengikuti `current_submission_id`; ketiga snapshot
+di-cast ke array. Review memakai `acted_at` dan tidak mempunyai `updated_at`.
+Event tidak memakai timestamp Eloquent; `save`/`delete` pada model ditolak. Jangan
+menulis riwayat lewat query builder; mutasi riwayat merupakan tanggung jawab fungsi DB.
+
+`PortalSeeder` juga membuat `manager@inka.test` dan `sm@inka.test`, password
+`password` melalui cast hashed `RecruitmentUser`, dengan penugasan aktif masing-masing
+`manager`/`sm` di Teknologi Informasi. Akun ini hanya untuk pengujian lokal.
+Seed dua kali terverifikasi tetap menghasilkan dua akun dengan dua penugasan aktif.
+
+Modul review staf belum tersedia: database aktif mempunyai kontrak berbeda dari
+alur yang diminta. `complete_review` menerima `recommended/not_recommended` untuk
+manager dan `accepted/rejected` untuk SM, membutuhkan tahap awal `manager_review`
+serta pasangan review yang sudah ditugaskan. `publish_decision` mensyaratkan admin.
+Tidak tersedia fungsi untuk inisialisasi review dari `submitted`. Implementasi
+alur `approved/rejected` dan publikasi oleh SM menunggu database dengan kontrak
+tersebut; tidak ada migration, perubahan fungsi DB, atau mutasi review manual.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

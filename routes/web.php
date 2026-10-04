@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ApplyController;
+use App\Http\Controllers\StaffController;
 use App\Models\Recruitment\Vacancy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -41,6 +42,20 @@ Route::middleware('auth:web')->group(function (): void {
     Route::post('/lamaran/{application}/profil', [ApplyController::class, 'saveProfile'])->whereNumber('application')->name('apply.profile');
     Route::post('/lamaran/{application}/dokumen', [ApplyController::class, 'uploadDocument'])->whereNumber('application')->name('apply.documents');
     Route::post('/lamaran/{application}/submit', [ApplyController::class, 'submit'])->whereNumber('application')->name('apply.submit');
+});
+
+Route::prefix('staf')->name('staff.')->middleware(['auth:web', 'staff.role:admin,manager,sm'])->group(function (): void {
+    Route::get('/', [StaffController::class, 'dashboard'])->name('dashboard');
+    Route::get('/lamaran', [StaffController::class, 'index'])->name('index');
+    Route::get('/lamaran/{application}', [StaffController::class, 'show'])->whereNumber('application')->name('show');
+    Route::get('/lamaran/{application}/dokumen/{document}', [StaffController::class, 'download'])
+        ->whereNumber('application')->whereNumber('document')->name('documents');
+    Route::post('/lamaran/{application}/assign', [StaffController::class, 'assign'])
+        ->middleware('staff.role:admin')->whereNumber('application')->name('assign');
+    Route::post('/lamaran/{application}/review', [StaffController::class, 'review'])
+        ->middleware('staff.role:manager,sm')->whereNumber('application')->name('review');
+    Route::post('/lamaran/{application}/putuskan', [StaffController::class, 'publish'])
+        ->middleware('staff.role:admin')->whereNumber('application')->name('publish');
 });
 
 Route::middleware('guest:web')->group(function (): void {

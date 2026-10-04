@@ -27,8 +27,9 @@
         </section>
         <section aria-labelledby="staff-modules-heading" class="card mt-5 p-6 sm:p-8">
             <x-icon name="clipboard" :size="28" class="mb-4 text-muted" />
-            <h2 id="staff-modules-heading" class="text-lg font-semibold">Modul staf akan hadir</h2>
-            <p class="mt-2 text-sm leading-6 text-muted">Pengelolaan rekrutmen belum tersedia di halaman ini.</p>
+            <h2 id="staff-modules-heading" class="text-lg font-semibold">Panel staf</h2>
+            <p class="mt-2 text-sm leading-6 text-muted">Kelola dan tinjau lamaran sesuai penugasan serta kewenangan Anda.</p>
+            <x-button :href="route('staff.dashboard')" variant="primary" class="mt-6">Buka panel staf</x-button>
         </section>
     @elseif ($user->isApplicant())
         <section aria-labelledby="applicant-heading" class="card p-6 sm:p-8">

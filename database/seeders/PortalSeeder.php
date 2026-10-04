@@ -9,6 +9,7 @@ use App\Models\Recruitment\InternshipRequest;
 use App\Models\Recruitment\OrgUnit;
 use App\Models\Recruitment\RecruitmentPeriod;
 use App\Models\Recruitment\RecruitmentUser;
+use App\Models\Recruitment\StaffAssignment;
 use App\Models\Recruitment\Vacancy;
 use App\Models\Recruitment\VacancyDocumentRequirement;
 use App\Models\Recruitment\VacancyRequirement;
@@ -28,6 +29,38 @@ class PortalSeeder extends Seeder
 
             foreach (['IT' => 'Teknologi Informasi', 'ENG' => 'Engineering', 'FIN' => 'Keuangan'] as $code => $name) {
                 $units[$code] = OrgUnit::updateOrCreate(['code' => $code], ['name' => $name]);
+            }
+
+            foreach (['manager' => 'Manager TI', 'sm' => 'SM TI'] as $role => $name) {
+                $staff = RecruitmentUser::updateOrCreate(['email' => $role.'@inka.test'], [
+                    'name' => $name,
+                    'password' => 'password', // RecruitmentUser hashes this attribute.
+                    'disabled_at' => null,
+                ]);
+                StaffAssignment::updateOrCreate([
+                    'user_id' => $staff->id,
+                    'role_code' => $role,
+                    'org_unit_id' => $units['IT']->id,
+                    'valid_to' => null,
+                ], ['valid_from' => $today]);
+            }
+
+            foreach ([
+                ['admin', 'Admin Portal', 'admin', null],
+                ['manager-eng', 'Manager Engineering', 'manager', $units['ENG']->id],
+                ['sm-eng', 'SM Engineering', 'sm', $units['ENG']->id],
+            ] as [$account, $name, $role, $unit]) {
+                $staff = RecruitmentUser::updateOrCreate(['email' => $account.'@inka.test'], [
+                    'name' => $name,
+                    'password' => 'password',
+                    'disabled_at' => null,
+                ]);
+                StaffAssignment::updateOrCreate([
+                    'user_id' => $staff->id,
+                    'role_code' => $role,
+                    'org_unit_id' => $unit,
+                    'valid_to' => null,
+                ], ['valid_from' => $today]);
             }
 
             // Requests require a user even on an empty database; this is not a login account.
