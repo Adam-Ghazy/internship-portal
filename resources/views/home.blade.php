@@ -9,20 +9,20 @@
         <div class="py-6 lg:py-14">
             <p class="mb-6 flex items-center gap-2.5 text-[13px]">
                 <span class="h-[7px] w-[7px] rounded-full bg-white" aria-hidden="true"></span>
-                Ruang magang
+                Ruang magang INKA
             </p>
             <h1 class="max-w-xl text-[clamp(40px,4.35vw,62px)] font-semibold leading-[1.06]">
-                Awali langkahmu.<br>Magang di sini.
+                Awali langkahmu.<br>Magang di INKA.
             </h1>
-            <p class="mt-6 max-w-md text-base leading-7 text-[#fff4f5]">
+            <p class="mt-6 max-w-md text-base leading-7 text-white/80">
                 Belajar langsung di balik karya perkeretaapian Indonesia. Temukan peranmu,
                 bangun keahlian, dan mulai perjalanan profesionalmu.
             </p>
             <div class="mt-8 flex flex-wrap items-center gap-6">
-                <a href="#posisi" class="btn border-white bg-white text-primary-hover hover:bg-[#fff1f3]">
+                <a href="#posisi" class="btn btn-primary">
                     Temukan peluang magang
                 </a>
-                <span class="text-xs leading-5 text-[#fff4f5]">Untuk mahasiswa<br>D3, D4, dan S1</span>
+                <span class="text-xs leading-5 text-white/80">Untuk mahasiswa<br>D3, D4, dan S1</span>
             </div>
         </div>
 

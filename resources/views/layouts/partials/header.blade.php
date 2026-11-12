@@ -4,7 +4,7 @@
             <span class="text-[29px] font-bold leading-none text-primary">Ruang Magang</span>
             <span class="hidden border-l border-line pl-5 leading-tight sm:block">
                 <span class="block text-[17px] font-semibold">Portal Rekrutmen Magang</span>
-                <span class="mt-1 block text-xs text-muted">Rekonstruksi portofolio · data sintetis</span>
+                <span class="mt-1 block text-xs text-muted">PT INKA (Persero)</span>
             </span>
         </a>
 

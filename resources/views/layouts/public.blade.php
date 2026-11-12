@@ -7,14 +7,14 @@
     <title>@yield('title', 'Ruang Magang') · {{ config('app.name', 'Ruang Magang') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen">
+<body class="flex min-h-screen flex-col">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-paper focus:px-4 focus:py-3">
         Lewati ke konten utama
     </a>
 
     @include('layouts.partials.header')
 
-    <main id="main" tabindex="-1">
+    <main id="main" tabindex="-1" class="flex-1">
         @yield('content')
     </main>
 
