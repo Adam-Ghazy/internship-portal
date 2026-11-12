@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\StaffUserController;
 use App\Http\Controllers\ApplyController;
 use App\Http\Controllers\StaffController;
 use App\Models\Recruitment\Vacancy;
@@ -56,6 +57,15 @@ Route::prefix('staf')->name('staff.')->middleware(['auth:web', 'staff.role:admin
         ->middleware('staff.role:manager,sm')->whereNumber('application')->name('review');
     Route::post('/lamaran/{application}/putuskan', [StaffController::class, 'publish'])
         ->middleware('staff.role:admin')->whereNumber('application')->name('publish');
+});
+
+Route::prefix('staf/pengguna')->name('staff.users.')->middleware(['auth:web', 'staff.role:admin'])->group(function (): void {
+    Route::get('/', [StaffUserController::class, 'index'])->name('index');
+    Route::get('/create', [StaffUserController::class, 'create'])->name('create');
+    Route::post('/', [StaffUserController::class, 'store'])->name('store');
+    Route::get('/{user}/edit', [StaffUserController::class, 'edit'])->whereNumber('user')->name('edit');
+    Route::patch('/{user}', [StaffUserController::class, 'update'])->whereNumber('user')->name('update');
+    Route::post('/{user}/status', [StaffUserController::class, 'toggle'])->whereNumber('user')->name('toggle');
 });
 
 Route::middleware('guest:web')->group(function (): void {
