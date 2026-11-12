@@ -75,8 +75,9 @@ class ApplyController extends Controller
             ->join('recruitment.vacancies as v', 'v.id', '=', 'a.vacancy_id')
             ->join('recruitment.internship_positions as p', 'p.id', '=', 'v.position_id')
             ->join('recruitment.org_units as u', 'u.id', '=', 'v.org_unit_id')
+            ->join('recruitment.recruitment_periods as rp', 'rp.id', '=', 'v.period_id')
             ->where('a.applicant_profile_id', $profile->id)
-            ->select('a.*', 'v.slug', 'p.title as position_title', 'u.name as unit_name')
+            ->select('a.*', 'v.slug', 'p.title as position_title', 'u.name as unit_name', 'rp.title as period_title')
             ->orderByDesc('a.updated_at')->orderByDesc('a.id')->get();
 
         return view('applications.index', [
