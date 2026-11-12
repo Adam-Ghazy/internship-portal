@@ -116,10 +116,11 @@ di-cast ke array. Review memakai `acted_at` dan tidak mempunyai `updated_at`.
 Event tidak memakai timestamp Eloquent; `save`/`delete` pada model ditolak. Jangan
 menulis riwayat lewat query builder; mutasi riwayat merupakan tanggung jawab fungsi DB.
 
-`PortalSeeder` juga membuat `manager@inka.test` dan `sm@inka.test`, password
-`password` melalui cast hashed `RecruitmentUser`, dengan penugasan aktif masing-masing
-`manager`/`sm` di Teknologi Informasi. Akun ini hanya untuk pengujian lokal.
-Seed dua kali terverifikasi tetap menghasilkan dua akun dengan dua penugasan aktif.
+`PortalSeeder` juga membuat empat akun demo dengan username sama dengan password:
+`admin`, `managerSDM`, `smSDM`, dan pelamar `bagas`, lewat cast hashed `RecruitmentUser`.
+Penugasan aktif `admin`/`manager`/`sm` menempel pada akun staf; `managerSDM` dan `smSDM`
+berada di Teknologi Informasi. Login menerima username atau email. Akun ini hanya untuk
+pengujian lokal. Seed dua kali terverifikasi tetap menghasilkan empat akun.
 
 Modul review staf belum tersedia: database aktif mempunyai kontrak berbeda dari
 alur yang diminta. `complete_review` menerima `recommended/not_recommended` untuk

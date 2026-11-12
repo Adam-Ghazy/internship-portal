@@ -18,30 +18,45 @@ class LoginController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        if (is_string($request->input('email'))) {
-            $request->merge(['email' => Str::lower(trim($request->input('email')))]);
+        if (is_string($request->input('login'))) {
+            $login = trim($request->input('login'));
+            // Email stored lowercase per check constraint; usernames keep their case.
+            if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+                $login = Str::lower($login);
+            }
+            $request->merge(['login' => $login]);
         }
 
         $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ], [
-            'email.required' => 'Email wajib diisi.',
-            'email.string' => 'Email harus berupa teks.',
-            'email.email' => 'Format email tidak valid.',
+            'login.required' => 'Username atau email wajib diisi.',
+            'login.string' => 'Username atau email harus berupa teks.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.string' => 'Kata sandi harus berupa teks.',
         ]);
 
-        if (! Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
+        $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        if (! Auth::guard('web')->attempt([$field => $credentials['login'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             return back()
-                ->withErrors(['email' => 'Email atau kata sandi salah.'])
-                ->onlyInput('email', 'remember');
+                ->withErrors(['login' => 'Username/email atau kata sandi salah.'])
+                ->onlyInput('login', 'remember');
+        }
+
+        $user = Auth::guard('web')->user();
+        if ($user->disabled_at !== null) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors(['login' => 'Akun tidak aktif. Hubungi administrator.'])->onlyInput('login', 'remember');
         }
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended($user->isStaff() ? route('staff.dashboard') : route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

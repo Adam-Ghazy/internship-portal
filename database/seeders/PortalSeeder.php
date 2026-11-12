@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Recruitment\ApplicantProfile;
 use App\Models\Recruitment\DocumentType;
 use App\Models\Recruitment\InternshipPosition;
 use App\Models\Recruitment\InternshipProgram;
@@ -31,28 +32,15 @@ class PortalSeeder extends Seeder
                 $units[$code] = OrgUnit::updateOrCreate(['code' => $code], ['name' => $name]);
             }
 
-            foreach (['manager' => 'Manager TI', 'sm' => 'SM TI'] as $role => $name) {
-                $staff = RecruitmentUser::updateOrCreate(['email' => $role.'@inka.test'], [
-                    'name' => $name,
-                    'password' => 'password', // RecruitmentUser hashes this attribute.
-                    'disabled_at' => null,
-                ]);
-                StaffAssignment::updateOrCreate([
-                    'user_id' => $staff->id,
-                    'role_code' => $role,
-                    'org_unit_id' => $units['IT']->id,
-                    'valid_to' => null,
-                ], ['valid_from' => $today]);
-            }
-
             foreach ([
-                ['admin', 'Admin Portal', 'admin', null],
-                ['manager-eng', 'Manager Engineering', 'manager', $units['ENG']->id],
-                ['sm-eng', 'SM Engineering', 'sm', $units['ENG']->id],
-            ] as [$account, $name, $role, $unit]) {
-                $staff = RecruitmentUser::updateOrCreate(['email' => $account.'@inka.test'], [
+                ['admin', 'admin@inka.test', 'Admin Portal', 'admin', null],
+                ['managerSDM', 'manager@inka.test', 'Manager SDM', 'manager', $units['IT']->id],
+                ['smSDM', 'sm@inka.test', 'Senior Manager SDM', 'sm', $units['IT']->id],
+            ] as [$username, $email, $name, $role, $unit]) {
+                $staff = RecruitmentUser::updateOrCreate(['email' => $email], [
+                    'username' => $username,
                     'name' => $name,
-                    'password' => 'password',
+                    'password' => $username, // RecruitmentUser hashes this attribute.
                     'disabled_at' => null,
                 ]);
                 StaffAssignment::updateOrCreate([
@@ -61,6 +49,25 @@ class PortalSeeder extends Seeder
                     'org_unit_id' => $unit,
                     'valid_to' => null,
                 ], ['valid_from' => $today]);
+            }
+
+            // Pelamar demo: username/password `bagas`.
+            $applicant = RecruitmentUser::updateOrCreate(['email' => 'bagas@inka.test'], [
+                'username' => 'bagas',
+                'name' => 'Bagas',
+                'password' => 'bagas',
+                'disabled_at' => null,
+            ]);
+            ApplicantProfile::updateOrCreate(['user_id' => $applicant->id]);
+
+            // Retire obsolete demo reviewers so the four accounts above are the only
+            // login-enabled demo users. Deleted only when nothing else references them.
+            foreach (['manager-eng@inka.test', 'sm-eng@inka.test'] as $email) {
+                $obsolete = RecruitmentUser::where('email', $email)->first();
+                if ($obsolete) {
+                    StaffAssignment::where('user_id', $obsolete->id)->delete();
+                    $obsolete->delete();
+                }
             }
 
             // Requests require a user even on an empty database; this is not a login account.
