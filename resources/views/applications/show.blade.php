@@ -1,6 +1,10 @@
-@extends('layouts.public')
+@extends('layouts.app')
 
 @section('title', 'Detail lamaran')
+
+@section('subtitle')
+    Data berikut adalah salinan lamaran saat dikirim. Data pada halaman ini tidak dapat diubah.
+@endsection
 
 @section('content')
 @php
@@ -13,7 +17,7 @@
         }
     }
 @endphp
-<div class="mx-auto max-w-4xl px-6 py-12">
+<div class="mx-auto max-w-4xl px-4 pb-12 sm:px-6">
     <a href="{{ route('applications.index') }}" class="text-sm font-semibold text-primary hover:underline">Kembali ke lamaran saya</a>
 
     @if (session('status'))
@@ -30,10 +34,7 @@
         </div>
     @endif
 
-    <header class="mt-8">
-        <h1 class="text-3xl font-semibold leading-tight md:text-4xl">Detail lamaran</h1>
-        <p class="mt-3 max-w-prose text-sm leading-6 text-muted">Data berikut adalah salinan lamaran saat dikirim. Data pada halaman ini tidak dapat diubah.</p>
-        <div class="mt-5 flex flex-wrap items-center gap-3">
+    <div class="mt-6 flex flex-wrap items-center gap-3">
             @if ($application->stage === 'submitted')
                 <span class="tag bg-primary text-white">{{ \App\Http\Controllers\ApplyController::stageLabel($application->stage) }}</span>
             @elseif ($application->stage === 'needs_revision')
@@ -72,7 +73,6 @@
         @if ($application->stage === 'withdrawn')
             <p class="mt-4 text-sm leading-6 text-muted">Lamaran ditarik dan tidak dapat dibuka kembali. Dokumen pengiriman tetap tersimpan sebagai arsip read-only.</p>
         @endif
-    </header>
 
     <section class="mt-10" aria-labelledby="vacancy-heading">
         <h2 id="vacancy-heading" class="text-xl font-semibold">Posisi yang dilamar</h2>

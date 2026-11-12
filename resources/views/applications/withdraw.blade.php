@@ -1,13 +1,16 @@
-@extends('layouts.public')
+@extends('layouts.app')
 
 @section('title', 'Tarik lamaran')
 
+@section('subtitle')
+    Konfirmasi penarikan lamaran Anda.
+@endsection
+
 @section('content')
-<div class="mx-auto max-w-2xl px-6 py-12">
+<div class="mx-auto max-w-2xl px-4 pb-12 sm:px-6">
     <a href="{{ route('applications.index') }}" class="text-sm font-semibold text-primary hover:underline">Kembali ke lamaran saya</a>
 
-    <h1 class="mt-8 text-3xl font-semibold leading-tight md:text-4xl">Tarik lamaran</h1>
-    <dl class="mt-6 space-y-4 border-y border-line py-5 text-sm">
+    <dl class="mt-8 space-y-4 border-y border-line py-5 text-sm">
         <div>
             <dt class="text-muted">Posisi</dt>
             <dd class="mt-1 break-words font-semibold">{{ $vacancy->position->title }}</dd>

@@ -1,6 +1,10 @@
-@extends('layouts.public')
+@extends('layouts.app')
 
 @section('title', 'Tinjau lamaran')
+
+@section('subtitle')
+    Data berikut merupakan salinan pengiriman terkini, bukan profil pelamar yang dapat berubah. Catatan tinjauan bersifat internal.
+@endsection
 
 @section('content')
 @php
@@ -11,16 +15,12 @@
     $reviewStageLabels = ['manager' => 'Manajer', 'sm' => 'Manajer senior'];
     $reviewStatusLabels = ['blocked' => 'Menunggu tinjauan manajer', 'pending' => 'Menunggu tinjauan', 'completed' => 'Selesai', 'superseded' => 'Digantikan', 'cancelled' => 'Dibatalkan'];
 @endphp
-<div class="mx-auto max-w-5xl px-6 py-12">
+<div class="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
     <a href="{{ route('staff.index') }}" class="text-sm font-semibold text-primary hover:underline">Kembali ke kotak masuk lamaran</a>
-    <header class="mt-8">
-        <h1 class="text-3xl font-semibold leading-tight md:text-4xl">Tinjau lamaran</h1>
-        <div class="mt-4 flex flex-wrap items-center gap-3">
-            @include('staff._stage')
-            <p class="break-all text-sm">Referensi: <strong>{{ $application->public_reference ?? 'Tidak tersedia' }}</strong></p>
-        </div>
-        <p class="mt-4 max-w-prose text-sm leading-6 text-muted">Data berikut merupakan salinan pengiriman terkini, bukan profil pelamar yang dapat berubah. Catatan tinjauan bersifat internal.</p>
-    </header>
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+        @include('staff._stage')
+        <p class="break-all text-sm">Referensi: <strong>{{ $application->public_reference ?? 'Tidak tersedia' }}</strong></p>
+    </div>
     @include('staff._notices')
 
     @if ($isAdmin && $application->stage === 'submitted')

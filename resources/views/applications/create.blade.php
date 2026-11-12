@@ -1,6 +1,10 @@
-@extends('layouts.public')
+@extends('layouts.app')
 
 @section('title', 'Lamar '.$vacancy->position->title)
+
+@section('subtitle')
+    {{ $vacancy->orgUnit->name }} · {{ $vacancy->period->title }}
+@endsection
 
 @section('content')
 @php
@@ -9,13 +13,9 @@
     $requiredCount = $vacancy->documentRequirements->where('required', true)->count();
     $readyToSubmit = $profileComplete && $missingDocuments->isEmpty();
 @endphp
-<div class="mx-auto max-w-content px-4 py-10 sm:px-6 lg:px-12">
+<div class="mx-auto max-w-content px-4 pb-10 sm:px-6">
     <a href="{{ route('applications.index') }}" class="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-hover">Kembali ke lamaran saya</a>
-    <header class="mt-7 max-w-3xl">
-        <h1 class="text-3xl font-semibold leading-tight sm:text-4xl">Lamar {{ $vacancy->position->title }}</h1>
-        <p class="mt-3 text-sm leading-6 text-muted">{{ $vacancy->orgUnit->name }} · {{ $vacancy->period->title }}</p>
-        <p class="mt-5 text-sm leading-7">Lamaran ini masih berupa draf. Simpan profil dan pendidikan, unggah dokumen, lalu kirim lamaran. Menyimpan draf belum mengirimkan lamaran kepada tim rekrutmen.</p>
-    </header>
+    <p class="mt-6 max-w-3xl text-sm leading-7">Lamaran ini masih berupa draf. Simpan profil dan pendidikan, unggah dokumen, lalu kirim lamaran. Menyimpan draf belum mengirimkan lamaran kepada tim rekrutmen.</p>
 
     <nav aria-label="Kelengkapan draf lamaran" class="mt-8 border-y border-line py-5">
         <ol class="grid gap-5 text-sm sm:grid-cols-3">

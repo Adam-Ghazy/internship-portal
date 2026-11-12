@@ -47,10 +47,27 @@
         @apply bg-[#edf6f0] text-[#226047];
     }
     .card {
-        @apply rounded-card border border-line bg-paper;
+        @apply rounded-card border border-line bg-paper shadow-sm;
     }
     .form-input {
         @apply block min-h-[46px] w-full rounded-card border-line bg-paper px-3 py-2.5
                text-ink focus:border-primary focus:ring-primary;
+    }
+    .sidebar-label {
+        @apply px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted;
+    }
+    .sidebar-link {
+        @apply flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium text-ink
+               transition-colors hover:bg-surface;
+    }
+    .sidebar-link-active {
+        @apply bg-primary-soft text-primary-hover hover:bg-primary-soft;
+    }
+    .tab {
+        @apply inline-flex items-center border-b-2 border-transparent px-1 pb-2.5 text-sm font-medium
+               text-muted transition-colors hover:text-ink;
+    }
+    .tab-active {
+        @apply border-primary font-semibold text-primary;
     }
 }
