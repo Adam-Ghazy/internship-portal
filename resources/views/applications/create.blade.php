@@ -71,7 +71,7 @@
 
             <section aria-labelledby="education-heading" class="mt-10">
                 <h2 id="education-heading" class="text-xl font-semibold">Riwayat pendidikan</h2>
-                <p id="education-hint" class="mt-3 text-sm leading-6 text-muted">Opsional. Anda dapat menyimpan profil tanpa riwayat pendidikan. Jika ditambahkan, lengkapi institusi, jenjang, jurusan, dan status pada setiap baris.</p>
+                <p id="education-hint" class="mt-3 text-sm leading-6 text-muted">Opsional, maksimal 20 riwayat pendidikan. Anda dapat menyimpan profil tanpa riwayat pendidikan. Jika ditambahkan, lengkapi institusi, jenjang, jurusan, dan status pada setiap baris.</p>
                 @if ($institutions->isEmpty())
                     <p class="mt-4 rounded-card bg-surface p-4 text-sm leading-6">Pilihan institusi belum tersedia. Anda tetap dapat menyimpan profil tanpa pendidikan. Hapus baris pendidikan yang belum dapat dilengkapi sebelum menyimpan.</p>
                 @endif
@@ -99,7 +99,7 @@
         <aside class="min-w-0 space-y-8 lg:col-span-1">
             <section aria-labelledby="documents-heading" class="card p-5 sm:p-6">
                 <h2 id="documents-heading" class="text-xl font-semibold">Dokumen pendukung</h2>
-                <p class="mt-3 text-sm leading-6 text-muted">Unggah satu PDF per jenis dokumen, maksimal 5 MB. Unggahan baru menggantikan berkas sebelumnya untuk jenis yang sama.</p>
+                <p class="mt-3 text-sm leading-6 text-muted">Pemeriksaan malware belum tersedia; status berkas masih menggunakan simulasi. Unggah satu PDF per jenis dokumen, maksimal 5 MB. Unggahan baru menggantikan berkas sebelumnya untuk jenis yang sama.</p>
                 <div class="mt-6 space-y-6">
                     @forelse ($vacancy->documentRequirements as $requirement)
                         @php
@@ -189,6 +189,7 @@
     };
     const updateRows = () => {
         const educationRows = [...rows.querySelectorAll('[data-education-row]')];
+        addButton.disabled = educationRows.length >= 20 || {{ $institutions->isEmpty() ? 'true' : 'false' }};
         educationRows.forEach((row, index) => {
             row.querySelector('[data-education-number]').textContent = index + 1;
             row.querySelector('[data-remove-education]').setAttribute('aria-label', `Hapus pendidikan ${index + 1}`);
@@ -198,6 +199,7 @@
     profile.addEventListener('input', updateDirty);
     profile.addEventListener('change', updateDirty);
     addButton.addEventListener('click', () => {
+        if (rows.querySelectorAll('[data-education-row]').length >= 20) return;
         const fragment = document.getElementById('education-template').content.cloneNode(true);
         fragment.querySelectorAll('*').forEach(element => {
             ['id', 'name', 'for', 'aria-describedby'].forEach(attribute => {

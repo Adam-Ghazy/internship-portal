@@ -41,7 +41,7 @@
 <div id="posisi" class="mx-auto max-w-content px-6 py-12 lg:px-12">
     <div class="mb-8">
         <h2 class="text-[29px] font-semibold">Posisi yang dibuka</h2>
-        <p class="mt-2 text-sm text-muted">{{ $vacancies->count() }} posisi · lihat periode pendaftaran pada setiap posisi</p>
+        <p class="mt-2 text-sm text-muted">{{ $vacancies->total() }} posisi · lihat periode pendaftaran pada setiap posisi</p>
     </div>
 
     @if (count($vacancies))
@@ -77,6 +77,7 @@
                 </article>
             @endforeach
         </div>
+        <div class="mt-8">{{ $vacancies->links() }}</div>
     @else
         <div class="card p-10 text-center">
             <h2 class="text-xl font-semibold">Belum ada posisi yang sesuai.</h2>

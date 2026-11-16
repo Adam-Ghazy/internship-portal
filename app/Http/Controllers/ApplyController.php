@@ -16,6 +16,7 @@ use Illuminate\Validation\ValidationException;
 class ApplyController extends Controller
 {
     private const EDUCATION_LEVELS = ['SMA/SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'];
+
     private const WITHDRAWABLE_STAGES = ['draft', 'submitted', 'needs_revision', 'administrative_review'];
 
     public function create(Request $request, string $slug)
@@ -24,14 +25,14 @@ class ApplyController extends Controller
         $application = DB::transaction(function () use ($profile, $slug, $request) {
             // Serialize creation for this profile before checking the unique profile/vacancy pair.
             $profile->newQuery()->whereKey($profile->id)->lockForUpdate()->firstOrFail();
-            $vacancy = Vacancy::where('slug', $slug)->firstOrFail();
+            $vacancy = Vacancy::where('slug', $slug)->lockForUpdate()->firstOrFail();
+            $this->openVacancy($vacancy->id);
             $application = DB::table('recruitment.applications')
                 ->where('applicant_profile_id', $profile->id)->where('vacancy_id', $vacancy->id)
                 ->lockForUpdate()->first();
             if ($application) {
                 $this->assertEditable($application);
             }
-            $this->openVacancy($vacancy->id);
             if (! $application) {
                 $id = DB::table('recruitment.applications')->insertGetId([
                     // The existing schema requires a unique, non-null value even for drafts.
@@ -60,8 +61,7 @@ class ApplyController extends Controller
         $educationLevels = self::EDUCATION_LEVELS;
         $documents = $this->draftDocuments($application->id);
         $profileComplete = filled($payload['profile']['phone'] ?? null);
-        $missingDocuments = $vacancy->documentRequirements->filter(fn ($requirement) =>
-            $requirement->required && (! isset($documents[$requirement->document_type_id])
+        $missingDocuments = $vacancy->documentRequirements->filter(fn ($requirement) => $requirement->required && (! isset($documents[$requirement->document_type_id])
                 || $documents[$requirement->document_type_id]->scan_status !== 'clean'));
 
         return view('applications.create', compact('application', 'vacancy', 'profile', 'draft', 'payload',
@@ -78,7 +78,7 @@ class ApplyController extends Controller
             ->join('recruitment.recruitment_periods as rp', 'rp.id', '=', 'v.period_id')
             ->where('a.applicant_profile_id', $profile->id)
             ->select('a.*', 'v.slug', 'p.title as position_title', 'u.name as unit_name', 'rp.title as period_title')
-            ->orderByDesc('a.updated_at')->orderByDesc('a.id')->get();
+            ->orderByDesc('a.updated_at')->orderByDesc('a.id')->paginate(15)->withQueryString();
 
         return view('applications.index', [
             'applications' => $applications,
@@ -165,13 +165,19 @@ class ApplyController extends Controller
 
     public function saveProfile(Request $request, int $application)
     {
-        DB::transaction(function () use ($request, $application) {
+        $this->ownedApplication($request, $application);
+        $request->validate(['educations' => ['sometimes', 'array', 'max:20']]);
+        $selectedIds = collect($request->input('educations', []))->pluck('institution_id')
+            ->filter(fn ($id) => is_scalar($id) && ctype_digit((string) $id))->unique()->values()->all();
+        $institutions = DB::table('recruitment.institutions')->whereNull('archived_at')
+            ->whereIn('id', $selectedIds)->pluck('name', 'id');
+        DB::transaction(function () use ($request, $application, $institutions) {
             [$application, $draft, $vacancy] = $this->editableDraft($request, $application);
             $validator = Validator::make($request->all(), [
                 'phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9][0-9 ()-]{5,31}$/'],
-                'educations' => ['sometimes', 'array'],
+                'educations' => ['sometimes', 'array', 'max:20'],
                 'educations.*' => ['array'],
-                'educations.*.institution_id' => ['required', 'integer', Rule::in(DB::table('recruitment.institutions')->whereNull('archived_at')->pluck('id')->all())],
+                'educations.*.institution_id' => ['required', 'integer', Rule::in($institutions->keys()->all())],
                 'educations.*.education_level' => ['required', Rule::in(self::EDUCATION_LEVELS)],
                 'educations.*.major' => ['required', 'string', 'max:160'],
                 'educations.*.is_active' => ['required', 'boolean'],
@@ -200,7 +206,6 @@ class ApplyController extends Controller
             ]);
             $data = $validator->validate();
             $educations = [];
-            $institutions = DB::table('recruitment.institutions')->pluck('name', 'id');
             foreach ($data['educations'] ?? [] as $row) {
                 $educations[] = [
                     'institution_id' => (int) $row['institution_id'],
@@ -213,9 +218,12 @@ class ApplyController extends Controller
             DB::table('recruitment.applicant_profiles')->where('id', $application->applicant_profile_id)
                 ->update(['phone' => $data['phone']]);
             DB::table('recruitment.applicant_educations')->where('applicant_profile_id', $application->applicant_profile_id)->delete();
-            foreach ($educations as $row) {
-                unset($row['institution_name']);
-                DB::table('recruitment.applicant_educations')->insert($row + ['applicant_profile_id' => $application->applicant_profile_id]);
+            if ($educations) {
+                DB::table('recruitment.applicant_educations')->insert(array_map(function ($row) use ($application) {
+                    unset($row['institution_name']);
+
+                    return $row + ['applicant_profile_id' => $application->applicant_profile_id];
+                }, $educations));
             }
             $payload = json_decode($draft->payload, true);
             $payload['profile'] = ['name' => $request->user()->name, 'email' => $request->user()->email, 'phone' => $data['phone']];
@@ -228,36 +236,39 @@ class ApplyController extends Controller
 
     public function uploadDocument(Request $request, int $application)
     {
-        $storedPath = null;
+        $owned = $this->ownedApplication($request, $application);
+        $this->assertEditable($owned);
+        $request->validate([
+            'document_type_id' => ['required', 'integer', Rule::in(DB::table('recruitment.vacancy_document_requirements')->where('vacancy_id', $owned->vacancy_id)->pluck('document_type_id')->all())],
+            'file' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'min:0.0009765625', 'max:5120'],
+        ], [
+            'document_type_id.required' => 'Jenis dokumen belum dipilih. Pilih dokumen pada formulir lamaran.',
+            'document_type_id.integer' => 'Jenis dokumen tidak valid. Muat ulang formulir lamaran.',
+            'document_type_id.in' => 'Jenis dokumen tidak diminta untuk posisi ini. Pilih tipe yang tercantum.',
+            'file.required' => 'Dokumen belum dipilih. Pilih PDF maksimal 5 MB.',
+            'file.file' => 'Dokumen tidak valid. Pilih ulang PDF maksimal 5 MB.',
+            'file.uploaded' => 'Dokumen gagal diunggah. Pilih ulang PDF maksimal 5 MB.',
+            'file.mimes' => 'Dokumen harus berformat PDF. Unggah PDF maksimal 5 MB.',
+            'file.mimetypes' => 'Isi dokumen bukan PDF. Unggah PDF maksimal 5 MB.',
+            'file.min' => 'Dokumen kosong. Unggah PDF berisi dokumen Anda, maksimal 5 MB.',
+            'file.max' => 'Ukuran dokumen melebihi 5 MB. Kompres PDF hingga maksimal 5 MB lalu unggah kembali.',
+        ]);
+        $file = $request->file('file');
+        $type = (int) $request->input('document_type_id');
+        $sha256 = hash_file('sha256', $file->getRealPath());
+        $storedPath = 'private/applications/'.$application.'/'.$type.'-'.Str::uuid().'.pdf';
+        $committed = false;
         try {
-            DB::transaction(function () use ($request, $application, &$storedPath) {
+            if (! Storage::disk('local')->putFileAs(dirname($storedPath), $file, basename($storedPath))) {
+                throw ValidationException::withMessages(['file' => 'Dokumen belum tersimpan. Coba unggah kembali PDF Anda.']);
+            }
+            DB::transaction(function () use ($request, $application, $file, $type, $sha256, $storedPath) {
                 [$application, $draft, $vacancy] = $this->editableDraft($request, $application);
-                $request->validate([
-                    'document_type_id' => ['required', 'integer', Rule::in($vacancy->documentRequirements->pluck('document_type_id')->all())],
-                    'file' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'min:0.0009765625', 'max:5120'],
-                ], [
-                    'document_type_id.required' => 'Jenis dokumen belum dipilih. Pilih dokumen pada formulir lamaran.',
-                    'document_type_id.integer' => 'Jenis dokumen tidak valid. Muat ulang formulir lamaran.',
-                    'document_type_id.in' => 'Jenis dokumen tidak diminta untuk posisi ini. Pilih tipe yang tercantum.',
-                    'file.required' => 'Dokumen belum dipilih. Pilih PDF maksimal 5 MB.',
-                    'file.file' => 'Dokumen tidak valid. Pilih ulang PDF maksimal 5 MB.',
-                    'file.uploaded' => 'Dokumen gagal diunggah. Pilih ulang PDF maksimal 5 MB.',
-                    'file.mimes' => 'Dokumen harus berformat PDF. Unggah PDF maksimal 5 MB.',
-                    'file.mimetypes' => 'Isi dokumen bukan PDF. Unggah PDF maksimal 5 MB.',
-                    'file.min' => 'Dokumen kosong. Unggah PDF berisi dokumen Anda, maksimal 5 MB.',
-                    'file.max' => 'Ukuran dokumen melebihi 5 MB. Kompres PDF hingga maksimal 5 MB lalu unggah kembali.',
-                ]);
-                $file = $request->file('file');
-                $type = (int) $request->input('document_type_id');
-                $sha256 = hash_file('sha256', $file->getRealPath());
-                $storedPath = 'private/applications/'.$application->id.'/'.$type.'-'.now()->format('YmdHisu').'.pdf';
-                if (! Storage::disk('local')->putFileAs(dirname($storedPath), $file, basename($storedPath))) {
-                    throw ValidationException::withMessages(['file' => 'Dokumen belum tersimpan. Coba unggah kembali PDF Anda.']);
-                }
+                abort_unless($vacancy->documentRequirements->contains('document_type_id', $type), 422);
                 $fileId = DB::table('recruitment.stored_files')->insertGetId([
                     'disk' => 'local', 'object_key' => $storedPath, 'uploader_id' => $request->user()->id,
                     'mime' => 'application/pdf', 'byte_size' => $file->getSize(), 'sha256' => $sha256,
-                    'scan_status' => 'clean', // Simulation only; not a malware scanner.
+                    'scan_status' => 'clean', // Legacy simulation; no malware scanner is installed.
                 ]);
                 DB::table('recruitment.application_draft_documents')->upsert([
                     'application_id' => $application->id, 'document_type_id' => $type,
@@ -267,9 +278,20 @@ class ApplyController extends Controller
                 $payload['documents'][$type] = ['original_name' => $file->getClientOriginalName()];
                 $this->saveDraft($application->id, $draft, $payload);
             });
+            $committed = true;
         } catch (\Throwable $exception) {
-            if ($storedPath !== null) {
-                Storage::disk('local')->delete($storedPath);
+            if (! $committed) {
+                try {
+                    // A commit callback/connection error can occur after durable commit.
+                    // If database state is uncertain, retain the object rather than break a reference.
+                    if (! DB::table('recruitment.stored_files')->where('disk', 'local')->where('object_key', $storedPath)->exists()) {
+                        if (! Storage::disk('local')->delete($storedPath)) {
+                            report(new \RuntimeException('Unable to remove failed upload: '.$storedPath));
+                        }
+                    }
+                } catch (\Throwable $cleanupException) {
+                    report($cleanupException);
+                }
             }
             throw $exception;
         }
@@ -382,7 +404,7 @@ class ApplyController extends Controller
 
     private function openVacancy(int $id): Vacancy
     {
-        $vacancy = Vacancy::with(['position', 'orgUnit', 'documentRequirements.documentType'])->sharedLock()->findOrFail($id);
+        $vacancy = Vacancy::with(['position', 'orgUnit', 'documentRequirements.documentType'])->lockForUpdate()->findOrFail($id);
         $period = $vacancy->period()->sharedLock()->firstOrFail();
         $vacancy->setRelation('period', $period);
         if ($vacancy->status !== 'published' || $period->closes_at->lessThanOrEqualTo(now())) {
@@ -401,9 +423,10 @@ class ApplyController extends Controller
     {
         $profile = $this->profile($request);
         $profile->newQuery()->whereKey($profile->id)->lockForUpdate()->firstOrFail();
+        $owned = $this->ownedApplication($request, $id);
+        $vacancy = $this->openVacancy($owned->vacancy_id);
         $application = $this->ownedApplication($request, $id, true);
         $this->assertEditable($application);
-        $vacancy = $this->openVacancy($application->vacancy_id);
         $draft = DB::table('recruitment.application_drafts')->where('application_id', $id)->lockForUpdate()->first();
         $request->validate(['lock_version' => ['required', 'integer', 'min:0']], [
             'lock_version.required' => 'Versi draft tidak tersedia. Muat ulang halaman lalu coba lagi.',

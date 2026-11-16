@@ -9,7 +9,9 @@ use App\Models\Recruitment\StaffAssignment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -88,9 +90,16 @@ class StaffUserController extends Controller
             if ($data['role_code'] !== 'admin') {
                 throw ValidationException::withMessages(['role_code' => 'Anda tidak dapat mengubah peran akun sendiri dari admin.']);
             }
+            if (Carbon::parse($data['valid_from'])->isFuture()) {
+                throw ValidationException::withMessages(['valid_from' => 'Tanggal mulai tidak boleh menonaktifkan akses admin Anda saat ini.']);
+            }
+            if (filled($data['valid_to'] ?? null) && Carbon::parse($data['valid_to'])->lte(now())) {
+                throw ValidationException::withMessages(['valid_to' => 'Tanggal berakhir tidak boleh menonaktifkan akses admin Anda saat ini.']);
+            }
         }
 
         DB::transaction(function () use ($user, $data) {
+            $user = RecruitmentUser::whereKey($user->id)->lockForUpdate()->firstOrFail();
             $user->update([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -110,8 +119,49 @@ class StaffUserController extends Controller
             ];
 
             $assignment = ($data['assignment_id'] ?? null)
-                ? StaffAssignment::where('user_id', $user->id)->whereKey($data['assignment_id'])->first()
+                ? StaffAssignment::where('user_id', $user->id)->whereKey($data['assignment_id'])->lockForUpdate()->firstOrFail()
                 : null;
+
+            $scopeChanged = $assignment && (
+                $assignment->role_code !== $assignmentData['role_code']
+                || $assignment->org_unit_id != $assignmentData['org_unit_id']
+            );
+            $reviews = $assignment
+                ? DB::table('recruitment.application_reviews')->where('staff_assignment_id', $assignment->id)
+                : null;
+            $hasReviews = $reviews && (clone $reviews)->exists();
+            $hasOpenReviews = $reviews && (clone $reviews)->whereIn('status', ['pending', 'blocked'])->exists();
+            $endsAt = $assignmentData['valid_to'] ? Carbon::parse($assignmentData['valid_to']) : null;
+            $startsAt = Carbon::parse($assignmentData['valid_from']);
+
+            if ($hasOpenReviews && ($scopeChanged || $startsAt->isFuture() || ($endsAt && $endsAt->lte(now())))) {
+                throw ValidationException::withMessages([
+                    'assignment_id' => 'Penugasan masih memiliki ulasan tertunda. Selesaikan atau alihkan ulasan sebelum mengubah peran, unit, atau masa aktif.',
+                ]);
+            }
+
+            if ($scopeChanged && $hasReviews) {
+                $boundary = now();
+                if ($assignment->valid_from->gte($boundary)) {
+                    throw ValidationException::withMessages(['valid_from' => 'Penugasan yang memiliki riwayat belum dapat ditutup. Periksa tanggal mulai aktif.']);
+                }
+                if ($assignment->valid_to === null || $assignment->valid_to->gt($boundary)) {
+                    $assignment->update(['valid_to' => $boundary]);
+                }
+                $assignmentData['valid_from'] = $startsAt->max($boundary)->toDateTimeString();
+                if ($endsAt && $endsAt->lte($assignmentData['valid_from'])) {
+                    throw ValidationException::withMessages(['valid_to' => 'Tanggal berakhir penugasan baru harus setelah waktu perubahan.']);
+                }
+                $assignment = null;
+            }
+
+            if ($assignmentData['valid_to'] === null && StaffAssignment::where('user_id', $user->id)
+                ->where('role_code', $assignmentData['role_code'])
+                ->where('org_unit_id', $assignmentData['org_unit_id'])
+                ->when($assignment, fn ($query) => $query->where('id', '<>', $assignment->id))
+                ->whereNull('valid_to')->exists()) {
+                throw ValidationException::withMessages(['assignment_id' => 'Penugasan aktif untuk peran dan unit ini sudah ada. Pilih penugasan tersebut untuk diedit.']);
+            }
 
             if ($assignment) {
                 $assignment->update($assignmentData);
@@ -143,6 +193,10 @@ class StaffUserController extends Controller
             $usernameRule = $usernameRule->ignore($user->id);
         }
 
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => Str::lower(trim($request->input('email')))]);
+        }
+
         if (is_string($request->input('username'))) {
             $request->merge(['username' => trim($request->input('username'))]);
         }
@@ -159,7 +213,7 @@ class StaffUserController extends Controller
             'valid_from' => ['required', 'date'],
             'valid_to' => ['nullable', 'date', 'after:valid_from'],
             'disabled' => ['nullable', 'boolean'],
-            'assignment_id' => ['nullable', 'integer', Rule::exists(StaffAssignment::class, 'id')],
+            'assignment_id' => ['nullable', 'integer', Rule::exists(StaffAssignment::class, 'id')->where('user_id', $user?->id)],
         ], [
             'name.required' => 'Nama wajib diisi.',
             'name.max' => 'Nama maksimal 160 karakter.',

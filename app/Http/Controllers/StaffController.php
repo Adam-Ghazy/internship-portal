@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Recruitment\Application;
-use App\Models\Recruitment\ApplicationReview;
 use App\Models\Recruitment\StaffAssignment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
@@ -67,11 +66,13 @@ class StaffController extends Controller
         $documents = $this->documents($application)->get();
         $reviews = DB::table('recruitment.application_reviews as r')
             ->join('recruitment.users as u', 'u.id', '=', 'r.assignee_id')
-            ->where('r.application_id', $application->id)->select('r.*', 'u.name as reviewer_name')->orderBy('r.id')->get();
+            ->where('r.application_id', $application->id)->select('r.*', 'u.name as reviewer_name')
+            ->orderBy('r.id')->paginate(20, ['*'], 'reviews_page')->withQueryString()->fragment('history-heading');
         $events = DB::table('recruitment.application_events as e')
             ->leftJoin('recruitment.users as u', 'u.id', '=', 'e.actor_id')
             ->where('e.application_id', $application->id)->select('e.*', 'u.name as actor_name')
-            ->orderBy('e.occurred_at')->orderBy('e.id')->get();
+            ->orderBy('e.occurred_at')->orderBy('e.id')
+            ->paginate(25, ['*'], 'events_page')->withQueryString()->fragment('events-heading');
         $pendingReview = $this->pendingForActor($application->reviews()->getQuery(), $request)->first();
         $publication = DB::table('recruitment.application_publications')->where('application_id', $application->id)->first();
         $isAdmin = $this->isAdmin($request);
@@ -132,21 +133,27 @@ class StaffController extends Controller
 
     public function review(Request $request, int $application)
     {
-        $this->databaseAction(function () use ($request, $application) {
+        $visibleApplication = $this->visibleApplications($request)->findOrFail($application);
+        $pendingReview = $this->pendingForActor($visibleApplication->reviews()->getQuery(), $request)->first();
+        if (! $pendingReview) {
+            throw ValidationException::withMessages(['review' => 'Tidak ada review aktif untuk Anda. Muat ulang halaman.']);
+        }
+        $outcomes = $pendingReview->stage === 'manager' ? ['recommended', 'not_recommended'] : ['accepted', 'rejected'];
+        $data = $request->validate([
+            'outcome' => ['required', Rule::in($outcomes)],
+            'note' => ['required', 'string', 'max:5000'],
+        ], [
+            'outcome.required' => 'Pilih hasil review.', 'outcome.in' => 'Hasil review tidak sesuai peran Anda.',
+            'note.required' => 'Catatan wajib diisi untuk semua hasil review.',
+            'note.string' => 'Catatan harus berupa teks.', 'note.max' => 'Catatan maksimal 5.000 karakter.',
+        ]);
+        $this->databaseAction(function () use ($request, $application, $pendingReview, $data) {
             $application = $this->lockApplication($request, $application);
-            $review = $this->pendingForActor($application->reviews()->getQuery(), $request)->lockForUpdate()->first();
+            $review = $this->pendingForActor($application->reviews()->getQuery(), $request)
+                ->whereKey($pendingReview->id)->lockForUpdate()->first();
             if (! $review) {
                 throw ValidationException::withMessages(['review' => 'Tidak ada review aktif untuk Anda. Muat ulang halaman.']);
             }
-            $outcomes = $review->stage === 'manager' ? ['recommended', 'not_recommended'] : ['accepted', 'rejected'];
-            $data = $request->validate([
-                'outcome' => ['required', Rule::in($outcomes)],
-                'note' => ['required', 'string', 'max:5000'],
-            ], [
-                'outcome.required' => 'Pilih hasil review.', 'outcome.in' => 'Hasil review tidak sesuai peran Anda.',
-                'note.required' => 'Catatan wajib diisi untuk semua hasil review.',
-                'note.string' => 'Catatan harus berupa teks.', 'note.max' => 'Catatan maksimal 5.000 karakter.',
-            ]);
             DB::select('SELECT recruitment.complete_review(?, ?, ?, ?)', [
                 $review->id, $request->user()->id, $data['outcome'], $data['note'],
             ]);
@@ -195,22 +202,27 @@ class StaffController extends Controller
             $query->whereHas('vacancy', fn (Builder $vacancy) => $vacancy->whereRaw(
                 "(recruitment.has_staff_scope(?, 'manager', org_unit_id) OR recruitment.has_staff_scope(?, 'sm', org_unit_id))",
                 [$request->user()->id, $request->user()->id]
-            ))->whereHas('reviews', fn (Builder $review) => $review->where('assignee_id', $request->user()->id)
-                ->whereRaw('recruitment.has_staff_scope(?, stage, org_unit_id)', [$request->user()->id]));
+            ))->whereHas('reviews', fn (Builder $review) => $this->assignedToActor($review, $request));
         }
 
         return $query;
     }
 
-    private function pendingForActor(Builder $query, Request $request): Builder
+    private function assignedToActor(Builder $query, Request $request): Builder
     {
-        return $query->where('assignee_id', $request->user()->id)->where('status', 'pending')
+        return $query->where('assignee_id', $request->user()->id)
             ->whereRaw('recruitment.has_staff_scope(?, recruitment.application_reviews.stage, recruitment.application_reviews.org_unit_id)', [$request->user()->id])
             ->whereExists(function ($assignment) {
                 $assignment->selectRaw('1')->from('recruitment.staff_assignments as s')
                     ->whereColumn('s.id', 'recruitment.application_reviews.staff_assignment_id')
                     ->whereRaw('s.valid_from <= CURRENT_TIMESTAMP AND (s.valid_to IS NULL OR CURRENT_TIMESTAMP < s.valid_to)');
-            })->whereExists(function ($application) {
+            });
+    }
+
+    private function pendingForActor(Builder $query, Request $request): Builder
+    {
+        return $this->assignedToActor($query, $request)->where('status', 'pending')
+            ->whereExists(function ($application) {
                 $application->selectRaw('1')->from('recruitment.applications as a')
                     ->whereColumn('a.id', 'recruitment.application_reviews.application_id')
                     ->whereColumn('a.current_submission_id', 'recruitment.application_reviews.based_on_submission_id')

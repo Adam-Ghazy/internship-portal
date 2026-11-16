@@ -52,7 +52,7 @@
             <section aria-labelledby="apps-heading">
                 <div class="flex items-baseline justify-between gap-4">
                     <h2 id="apps-heading" class="text-xl font-semibold text-ink">Lamaran saya</h2>
-                    <span class="text-sm text-muted">{{ $applications->count() }} lamaran</span>
+                    <span class="text-sm text-muted">{{ $applicationCount }} lamaran</span>
                 </div>
 
                 @if ($applications->isEmpty())
@@ -66,7 +66,7 @@
                             @include('applications._card', ['application' => $application])
                         @endforeach
                     </div>
-                    @if ($applications->count() > 5)
+                    @if ($applicationCount > 5)
                         <x-button href="{{ route('applications.index') }}" class="mt-5">Lihat semua lamaran</x-button>
                     @endif
                 @endif

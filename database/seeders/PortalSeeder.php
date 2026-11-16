@@ -22,6 +22,10 @@ class PortalSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('PortalSeeder hanya boleh dijalankan pada lingkungan local atau testing.');
+        }
+
         DB::transaction(function (): void {
             $today = today();
             $startsOn = $today->copy()->subMonthNoOverflow();
@@ -37,13 +41,13 @@ class PortalSeeder extends Seeder
                 ['managerSDM', 'manager@inka.test', 'Manager SDM', 'manager', $units['IT']->id],
                 ['smSDM', 'sm@inka.test', 'Senior Manager SDM', 'sm', $units['IT']->id],
             ] as [$username, $email, $name, $role, $unit]) {
-                $staff = RecruitmentUser::updateOrCreate(['email' => $email], [
+                $staff = RecruitmentUser::firstOrCreate(['email' => $email], [
                     'username' => $username,
                     'name' => $name,
                     'password' => $username, // RecruitmentUser hashes this attribute.
                     'disabled_at' => null,
                 ]);
-                StaffAssignment::updateOrCreate([
+                StaffAssignment::firstOrCreate([
                     'user_id' => $staff->id,
                     'role_code' => $role,
                     'org_unit_id' => $unit,
@@ -52,7 +56,7 @@ class PortalSeeder extends Seeder
             }
 
             // Pelamar demo: username/password `bagas`.
-            $applicant = RecruitmentUser::updateOrCreate(['email' => 'bagas@inka.test'], [
+            $applicant = RecruitmentUser::firstOrCreate(['email' => 'bagas@inka.test'], [
                 'username' => 'bagas',
                 'name' => 'Bagas',
                 'password' => 'bagas',
@@ -60,13 +64,13 @@ class PortalSeeder extends Seeder
             ]);
             ApplicantProfile::updateOrCreate(['user_id' => $applicant->id]);
 
-            // Retire obsolete demo reviewers so the four accounts above are the only
-            // login-enabled demo users. Deleted only when nothing else references them.
+            // Simpan penugasan lama agar riwayat review tetap utuh.
             foreach (['manager-eng@inka.test', 'sm-eng@inka.test'] as $email) {
                 $obsolete = RecruitmentUser::where('email', $email)->first();
                 if ($obsolete) {
-                    StaffAssignment::where('user_id', $obsolete->id)->delete();
-                    $obsolete->delete();
+                    $obsolete->update(['disabled_at' => $obsolete->disabled_at ?? now()]);
+                    StaffAssignment::where('user_id', $obsolete->id)->whereNull('valid_to')
+                        ->where('valid_from', '<', now())->update(['valid_to' => now()]);
                 }
             }
 

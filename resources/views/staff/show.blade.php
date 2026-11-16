@@ -111,10 +111,10 @@
                     @error('outcome')<p id="outcome-error" class="mt-2 text-sm text-primary-hover">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="note_internal" class="mb-2 block text-sm font-medium">Catatan internal (wajib)</label>
-                    <textarea id="note_internal" name="note_internal" rows="5" maxlength="5000" required class="form-input w-full" aria-describedby="note-help{{ $errors->has('note_internal') ? ' note-error' : '' }}" @error('note_internal') aria-invalid="true" @enderror>{{ old('note_internal') }}</textarea>
+                    <label for="note" class="mb-2 block text-sm font-medium">Catatan internal (wajib)</label>
+                    <textarea id="note" name="note" rows="5" maxlength="5000" required class="form-input w-full" aria-describedby="note-help{{ $errors->has('note') ? ' note-error' : '' }}" @error('note') aria-invalid="true" @enderror>{{ old('note') }}</textarea>
                     <p id="note-help" class="mt-2 text-xs leading-5 text-muted">Jelaskan alasan untuk setiap hasil tinjauan. Maksimal 5.000 karakter; tidak ditampilkan kepada pelamar.</p>
-                    @error('note_internal')<p id="note-error" class="mt-2 text-sm text-primary-hover">{{ $message }}</p>@enderror
+                    @error('note')<p id="note-error" class="mt-2 text-sm text-primary-hover">{{ $message }}</p>@enderror
                 </div>
                 <x-button type="submit" variant="primary">Simpan hasil tinjauan</x-button>
             </form>
@@ -138,6 +138,7 @@
                 <li class="text-sm leading-6 text-muted">Belum ada tinjauan pada pengiriman ini.</li>
             @endforelse
         </ol>
+        <div class="mt-5">{{ $reviews->links() }}</div>
     </section>
 
     @if ($publication)
@@ -153,9 +154,9 @@
             <form action="{{ route('staff.publish', $application) }}" method="POST" class="mt-6 max-w-xl space-y-5">
                 @csrf
                 <div>
-                    <label for="public_message" class="mb-2 block text-sm font-medium">Pesan untuk pelamar (wajib)</label>
-                    <textarea id="public_message" name="public_message" rows="5" required minlength="10" maxlength="5000" class="form-input w-full" aria-describedby="publication-help{{ $errors->has('public_message') ? ' publication-error' : '' }}" @error('public_message') aria-invalid="true" @enderror>{{ old('public_message') }}</textarea>
-                    @error('public_message')<p id="publication-error" class="mt-2 text-sm text-primary-hover">{{ $message }}</p>@enderror
+                    <label for="message" class="mb-2 block text-sm font-medium">Pesan untuk pelamar (wajib)</label>
+                    <textarea id="message" name="message" rows="5" required minlength="10" maxlength="5000" class="form-input w-full" aria-describedby="publication-help{{ $errors->has('message') ? ' publication-error' : '' }}" @error('message') aria-invalid="true" @enderror>{{ old('message') }}</textarea>
+                    @error('message')<p id="publication-error" class="mt-2 text-sm text-primary-hover">{{ $message }}</p>@enderror
                 </div>
                 <x-button type="submit" variant="primary">Publikasikan kepada pelamar</x-button>
             </form>
@@ -177,6 +178,7 @@
                 <li class="text-sm leading-6 text-muted">Belum ada aktivitas yang tercatat.</li>
             @endforelse
         </ol>
+        <div class="mt-5">{{ $events->links() }}</div>
     </section>
 </div>
 @endsection

@@ -43,6 +43,7 @@
                 ])
             @endforeach
         </div>
+        <div class="mt-6">{{ $applications->links() }}</div>
     @endif
 </div>
 @endsection

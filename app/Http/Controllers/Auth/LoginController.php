@@ -11,6 +11,11 @@ use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('throttle:5,1,login')->only('login');
+    }
+
     public function showLoginForm(): View
     {
         return view('auth.login');
@@ -55,6 +60,7 @@ class LoginController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->put('password_hash_web', $user->getAuthPassword());
 
         return redirect()->intended($user->isStaff() ? route('staff.dashboard') : route('dashboard'));
     }

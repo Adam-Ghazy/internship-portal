@@ -16,6 +16,11 @@ use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('throttle:3,1,register')->only('register');
+    }
+
     public function showRegistrationForm(): View
     {
         return view('auth.register');
@@ -61,6 +66,7 @@ class RegisterController extends Controller
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
+        $request->session()->put('password_hash_web', $user->getAuthPassword());
 
         return redirect('/dashboard');
     }
